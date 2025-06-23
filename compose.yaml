@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  oracle-db:
+    image: gvenzl/oracle-xe:21.3.0
+    container_name: oracle-db
+    restart: unless-stopped
+    environment:
+      ORACLE_PASSWORD: oracle
+      ORACLE_DATABASE: tododb
+      ORACLE_APP_USER: spring
+      ORACLE_APP_USER_PASSWORD: spring
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    networks:
+      - todo-net
+
+  maven-build:
+    image: maven:3.9.6-eclipse-temurin-21
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - maven-cache:/root/.m2
+    command: mvn clean package
+    networks:
+      - todo-net
+
+  app:
+    depends_on:
+      - oracle-db
+      - maven-build
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - todo-net
+
+volumes:
+  oracle-data:
+  maven-cache:
+
+networks:
+  todo-net:
